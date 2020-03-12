@@ -24,6 +24,7 @@
         doorObjs:[],
         switchObjs:[],
         rdhxObjs:[],
+        allObjs:[],
         isOpen:false
       }
     },
@@ -90,6 +91,7 @@
                   this.rdhxObjs.push(child)
                 }
                 child.material.side = DoubleSide;
+                this.allObjs = [...this.serverObjs,...this.doorObjs,...this.switchObjs,...this.rdhxObjs];
               }
             });
             dom.addEventListener('mousedown', this.onMouseDown, false);
@@ -108,7 +110,7 @@
         //总结一下，这里必须装网格，mesh，装入组是没有效果的
         //所以我们将所有的盒子的网格放入对象就可以了
         // 需要被监听的对象要存储在clickObjects中。
-        const intersects = this.raycaster.intersectObjects(this.clickObjects);
+        const intersects = this.raycaster.intersectObjects(this.allObjs);
         if(intersects.length > 0) {
           // 在这里填写点击代码
           console.log(intersects[0].object);
