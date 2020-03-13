@@ -42,6 +42,7 @@
           message: `Server-${this.warn} 温度过高`,
           type: 'warning'
         });
+
       },3000)
       setInterval(()=>{
       },1000)
@@ -61,19 +62,12 @@
         // 初始化灯光
         this.initLight()
         // 初始化坐标辅助
-        this.initAxis()
+        // this.initAxis()
         // 加载地板
         this.initGroud(dom);
         this.initControl();
         // 加载模型
         this.initMesh(dom);
-
-        this.labelRenderer = new CSS2DRenderer();
-        this.labelRenderer.setSize( dom.clientWidth, dom.clientHeight );
-        this.labelRenderer.domElement.style.position = 'absolute';
-        this.labelRenderer.domElement.style.top = '0';
-        this.labelRenderer.domElement.style.pointerEvents = 'none';
-        document.getElementById( 'container' ).appendChild( this.labelRenderer.domElement );
       },
       // 初始化模型
       initMesh(dom){
@@ -90,14 +84,36 @@
                 if(child.name.includes('sever')){
                   this.serverObjs.push(child)
                 }
+                if(child.name == 'CDU'){
+                  this.addLabel(child,'CDU',[0,2,0],[-0.3,2.5,0],[-0.8,2.5,0],[-.5,2.6,0])
+                }
+                if(child.name == 'PDU'){
+                  this.addLabel(child,'S-ICRC',[0.1,1,-0.4],[-0.3,0.8,-0.4],[-1,0.8,-0.4],[-.5,0.9,-0.4])
+                }
+                if(child.name == 'pdu'){
+                  this.addLabel(child,'SPDU',[-0.3,1,0.4],[-0.5,0.8,0.4],[-1,0.8,0.4],[-.5,0.9,0.4])
+                }
                 if(child.name.includes('door') || child.name.includes('EMO')|| child.name.includes('minipc')){
                   this.doorObjs.push(child)
+                  if(child.name == 'EMO'){
+                    this.addLabel(child,'EMO',[0.2,1.5,-.5],[1,2.5,-.5],[1.5,2.5,-.5],[1.5,2.6,-.5])
+                  }
+                  if(child.name == 'minipc'){
+                    this.addLabel(child,'MiniPC',[0,1.5,-.5],[1,0.5,-.5],[1.5,0.5,-.5],[1.5,0.6,-.5])
+                  }
                 }
                 if(child.name.includes('left') || child.name.includes('right')|| child.name.includes('switch')){
                   this.switchObjs.push(child)
+                  if(child.name == 'switch3'){
+                    this.addLabel(child,'Switch',[0.2,1,1],[1,1.5,1],[1.5,1.5,1],[1.5,1.6,1])
+                  }
+                  if(child.name == 'switch1'){
+                    this.addLabel(child,'Switch',[-0.2,1,1],[-1,1.5,1],[-1.5,1.5,1],[-1.1,1.6,1])
+                  }
                 }
                 if(child.name.includes('rdhx')){
                   this.rdhxObjs.push(child)
+                  this.addLabel(child,'RDHx',[-0.2,2,1.2],[-1,2.5,1.2],[-1.5,2.5,1.2],[-1.1,2.6,1.2])
                 }
                 child.material.side = DoubleSide;
                 this.allObjs = [...this.serverObjs,...this.doorObjs,...this.switchObjs,...this.rdhxObjs];
@@ -111,16 +127,39 @@
         })
       },
       // 添加标注
-      addLabel(child,text,x,y,z){
-        const div = document.createElement('div');
-        div.className = 'label';
-        div.textContent = text;
-        // div.onclick = function () {
-        //   callback(Mash)
-        // };
-        const labelObj = new CSS2DObject(div);
-        labelObj.position.set(x,y,z);
-        child.add(labelObj);
+      addLabel(child,text,p1,p2,p3,textPosition){
+        // 添加线
+        const lineGeometry = new THREE.Geometry();
+        const lineMaterial = new THREE.LineBasicMaterial({vertexColors:true});
+        const color = new THREE.Color('#009FFF');
+        let _p1 = new THREE.Vector3(...p1);
+        let _p2 = new THREE.Vector3(...p2);
+        let _p3 = new THREE.Vector3(...p3);
+        lineGeometry.vertices.push(_p1);
+        lineGeometry.vertices.push(_p2);
+        lineGeometry.vertices.push(_p2);
+        lineGeometry.vertices.push(_p3);
+        lineGeometry.colors.push(color,color,color,color)
+        const line = new THREE.Line(lineGeometry,lineMaterial,THREE.LineSegments);
+        child.add(line);
+        // 创建文字
+        const textLoader = new THREE.FontLoader();
+        textLoader.load( 'helvetiker_regular.typeface.json',  ( font ) => {
+          const textgeometry = new THREE.TextGeometry( text, {
+            font: font,
+            size: .1,
+            height:0.01,
+          } );
+          const textMaterial = new THREE.MeshBasicMaterial({
+            flatShading: THREE.FlatShading,
+            transparent: true,
+            color:'#009FFF'
+          });
+          const textMesh = new THREE.Mesh(textgeometry, textMaterial);
+          textMesh.position.set(...textPosition)
+          textMesh.rotateY(135)
+          child.add(textMesh)
+        });
       },
       onMouseDown(event){
         event.preventDefault();
@@ -210,7 +249,7 @@
       },
       animate() {
         if(this.mesh){
-          this.mesh.rotation.y += 0.1//添加动画
+          this.mesh.rotation.y = -10;//添加动画
           // 服务器操作
           this.serverHandle();
           // this.clickObjects.forEach((child)=>{
@@ -221,7 +260,6 @@
           //     child.material.color.set(1,0,0)
           //   }
           // })
-          // this.labelRenderer.render( this.scene, this.camera );
         }
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame(this.animate);
