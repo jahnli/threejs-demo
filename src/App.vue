@@ -2,6 +2,7 @@
   <div id="app">
     <div id="container" style="width: 800px;height: 600px"></div>
     <el-button type="primary" @click="splitHandle">{{isOpen ? '收起':'展开'}}</el-button>
+    <div class="label" v-show="showTooltip">{{tooltipText}}</div>
   </div>
 </template>
 <script>
@@ -27,7 +28,9 @@
         switchObjs:[],
         rdhxObjs:[],
         allObjs:[],
-        isOpen:false
+        isOpen:false,
+        showTooltip:false,
+        tooltipText:''
       }
     },
     mounted() {
@@ -45,6 +48,7 @@
 
       },3000)
       setInterval(()=>{
+        // this.splitHandle()
       },1000)
     },
     methods: {
@@ -68,6 +72,13 @@
         this.initControl();
         // 加载模型
         this.initMesh(dom);
+
+        this.labelRenderer = new CSS2DRenderer();
+        this.labelRenderer.setSize( dom.clientWidth, dom.clientHeight );
+        this.labelRenderer.domElement.style.position = 'absolute';
+        this.labelRenderer.domElement.style.top = '0';
+        this.labelRenderer.domElement.style.pointerEvents = 'none';
+        document.getElementById( 'container' ).appendChild( this.labelRenderer.domElement );
       },
       // 初始化模型
       initMesh(dom){
@@ -170,11 +181,28 @@
         //所以我们将所有的盒子的网格放入对象就可以了
         // 需要被监听的对象要存储在clickObjects中。
         const intersects = this.raycaster.intersectObjects(this.allObjs);
+        const dom = document.querySelector('.label');
+        const tooltipObj = this.scene.getObjectByName('tooltip');
         if(intersects.length > 0) {
           // 在这里填写点击代码
-          console.log(intersects[0].object);
+          let item = intersects[0].object;
+          this.showTooltip = true;
+          if(!tooltipObj){
+            const labelObj = new CSS2DObject(dom);
+            labelObj.name = 'tooltip';
+            labelObj.position.set(intersects[0].point.x,intersects[0].point.y,intersects[0].point.z);
+            this.scene.add(labelObj);
+          }else{
+            tooltipObj.visible = true;
+            tooltipObj.position.set(intersects[0].point.x,intersects[0].point.y,intersects[0].point.z);
+          }
+          this.tooltipText =  item.name;
+          // 将几何体添加到场景中
           // intersects[0].object.material = new MeshPhongMaterial()
           // intersects[0].object.material.color.set('red')
+        }else{
+          this.scene.getObjectByName('tooltip').visible = false;
+          this.showTooltip = false;
         }
       },
       // 单个服务器操作
@@ -260,6 +288,7 @@
           //     child.material.color.set(1,0,0)
           //   }
           // })
+          this.labelRenderer.render(this.scene,this.camera)
         }
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame(this.animate);
@@ -322,11 +351,12 @@
     align-items: flex-start;
   }
 
-  .label {
-    margin-top: -20px;
+  .label,.test {
+    border-radius: 5px;
     color: white;
     border: 1px solid #fff;
-    padding: 3px 5px;
-    background: rgba(0, 0, 0, 0.6)
+    padding: 10px 5px;
+    background: rgba(0, 0, 0, 0.6);
   }
+
 </style>
