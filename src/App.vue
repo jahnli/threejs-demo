@@ -1,10 +1,11 @@
 <template>
   <div id="app">
-    <canvas id="container" width="800px" height="600px" ></canvas>
+    <div id="container" style="width: 800px;height: 600px"></div>
     <el-button type="primary" @click="splitHandle">{{isOpen ? '收起':'展开'}}</el-button>
   </div>
 </template>
 <script>
+  import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer'
   import {OBJLoader,MTLLoader} from 'three-obj-mtl-loader';
   import * as THREE from 'three';
   import 'three-orbitcontrols';
@@ -17,6 +18,7 @@
         renderer: null,
         mesh: null,
         mouse:null,
+        labelRenderer:null,
         raycaster:null,
         clickObjects:[],
         warn:'1-2',
@@ -59,12 +61,19 @@
         // 初始化灯光
         this.initLight()
         // 初始化坐标辅助
-        // this.initAxis()
+        this.initAxis()
         // 加载地板
         this.initGroud(dom);
         this.initControl();
         // 加载模型
         this.initMesh(dom);
+
+        this.labelRenderer = new CSS2DRenderer();
+        this.labelRenderer.setSize( dom.clientWidth, dom.clientHeight );
+        this.labelRenderer.domElement.style.position = 'absolute';
+        this.labelRenderer.domElement.style.top = '0';
+        this.labelRenderer.domElement.style.pointerEvents = 'none';
+        document.getElementById( 'container' ).appendChild( this.labelRenderer.domElement );
       },
       // 初始化模型
       initMesh(dom){
@@ -98,9 +107,20 @@
             obj.position.y = -1
             this.mesh = obj;//储存到全局变量中
             this.scene.add(obj);//将导入的模型添加到场景中
-
           });
         })
+      },
+      // 添加标注
+      addLabel(child,text,x,y,z){
+        const div = document.createElement('div');
+        div.className = 'label';
+        div.textContent = text;
+        // div.onclick = function () {
+        //   callback(Mash)
+        // };
+        const labelObj = new CSS2DObject(div);
+        labelObj.position.set(x,y,z);
+        child.add(labelObj);
       },
       onMouseDown(event){
         event.preventDefault();
@@ -190,7 +210,7 @@
       },
       animate() {
         if(this.mesh){
-          this.mesh.rotation.y = -10;//添加动画
+          this.mesh.rotation.y += 0.1//添加动画
           // 服务器操作
           this.serverHandle();
           // this.clickObjects.forEach((child)=>{
@@ -201,6 +221,7 @@
           //     child.material.color.set(1,0,0)
           //   }
           // })
+          // this.labelRenderer.render( this.scene, this.camera );
         }
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame(this.animate);
@@ -220,10 +241,11 @@
       // 初始化渲染器
       initRenderer(dom){
         this.renderer = new WebGLRenderer({//渲染器
-          canvas:dom, // 画布
           antialias: true,
         });
         this.renderer.setClearColor('white');//画布颜色
+        this.renderer.setSize(dom.clientWidth,dom.clientHeight)
+        document.getElementById( 'container' ).appendChild( this.renderer.domElement );
       },
       // 控制器
       initControl(){
@@ -262,4 +284,11 @@
     align-items: flex-start;
   }
 
+  .label {
+    margin-top: -20px;
+    color: white;
+    border: 1px solid #fff;
+    padding: 3px 5px;
+    background: rgba(0, 0, 0, 0.6)
+  }
 </style>
